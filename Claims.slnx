@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="Claims.Application/Claims.Application.csproj" />
+  <Project Path="Claims.Domain/Claims.Domain.csproj" />
+  <Project Path="Claims.Infrastructure/Claims.Infrastructure.csproj" />
+  <Project Path="Claims.IntegrationTests/Claims.IntegrationTests.csproj" />
+  <Project Path="Claims.RepositoryTests/Claims.RepositoryTests.csproj" />
+  <Project Path="Claims.UnitTests/Claims.UnitTests.csproj" />
+  <Project Path="Claims.WebApi/Claims.WebApi.csproj" />
+</Solution>

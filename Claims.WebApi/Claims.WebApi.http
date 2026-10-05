@@ -1,0 +1,6 @@
+@Claims.WebApi_HostAddress = http://localhost:5180
+
+GET {{Claims.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

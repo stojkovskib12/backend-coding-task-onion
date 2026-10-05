@@ -1,0 +1,199 @@
+{
+  "info": {
+    "_postman_id": "81cb6baa-19c5-4a61-9052-2f03df1dc693",
+    "name": "Claims API - Local Manual Testing",
+    "description": "Manual CRUD, premium, and validation checks for the local Claims API. Start the API first; its default launch profile uses http://localhost:5180.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5180" },
+    { "key": "coverId", "value": "" },
+    { "key": "claimId", "value": "" },
+    { "key": "coverStartDate", "value": "" },
+    { "key": "coverEndDate", "value": "" },
+    { "key": "claimDate", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const start = new Date();",
+          "start.setUTCHours(0, 0, 0, 0);",
+          "start.setUTCDate(start.getUTCDate() + 1);",
+          "const end = new Date(start);",
+          "end.setUTCDate(end.getUTCDate() + 60);",
+          "const claimDate = new Date(start);",
+          "claimDate.setUTCDate(claimDate.getUTCDate() + 1);",
+          "pm.collectionVariables.set('coverStartDate', start.toISOString().slice(0, 10));",
+          "pm.collectionVariables.set('coverEndDate', end.toISOString().slice(0, 10));",
+          "pm.collectionVariables.set('claimDate', claimDate.toISOString().slice(0, 10));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Covers",
+      "item": [
+        {
+          "name": "Create cover (Yacht, 60 days)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"{{coverStartDate}}\",\n  \"endDate\": \"{{coverEndDate}}\",\n  \"type\": \"Yacht\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Covers"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Cover is created', () => pm.response.to.have.status(201));",
+                "const cover = pm.response.json();",
+                "pm.collectionVariables.set('coverId', cover.id);",
+                "pm.test('Premium is returned', () => pm.expect(cover.premium).to.be.above(0));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "List covers",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Covers" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Covers are listed', () => pm.response.to.have.status(200));", "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));" ] } }]
+        },
+        {
+          "name": "Get created cover",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Covers/{{coverId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is returned', () => pm.response.to.have.status(200));", "pm.test('ID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('coverId')));" ] } }]
+        },
+        {
+          "name": "Calculate premium (Yacht, 60 days)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/Covers/compute?startDate={{coverStartDate}}&endDate={{coverEndDate}}&coverType=Yacht",
+              "host": ["{{baseUrl}}"],
+              "path": ["Covers", "compute"],
+              "query": [
+                { "key": "startDate", "value": "{{coverStartDate}}" },
+                { "key": "endDate", "value": "{{coverEndDate}}" },
+                { "key": "coverType", "value": "Yacht" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Premium calculation succeeds', () => pm.response.to.have.status(200));", "pm.test('Premium is numeric', () => pm.expect(Number(pm.response.text())).to.be.above(0));" ] } }]
+        },
+        {
+          "name": "Reject cover starting in the past (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"{{pastStartDate}}\",\n  \"endDate\": \"{{pastEndDate}}\",\n  \"type\": \"Yacht\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Covers"
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const start = new Date();", "start.setUTCHours(0, 0, 0, 0);", "start.setUTCDate(start.getUTCDate() - 1);", "const end = new Date(start);", "end.setUTCDate(end.getUTCDate() + 30);", "pm.variables.set('pastStartDate', start.toISOString().slice(0, 10));", "pm.variables.set('pastEndDate', end.toISOString().slice(0, 10));" ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Past start date is rejected', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }
+          ]
+        },
+        {
+          "name": "Reject cover longer than one year (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"{{longStartDate}}\",\n  \"endDate\": \"{{longEndDate}}\",\n  \"type\": \"Tanker\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Covers"
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const start = new Date();", "start.setUTCHours(0, 0, 0, 0);", "start.setUTCDate(start.getUTCDate() + 1);", "const end = new Date(start);", "end.setUTCFullYear(end.getUTCFullYear() + 1);", "end.setUTCDate(end.getUTCDate() + 1);", "pm.variables.set('longStartDate', start.toISOString().slice(0, 10));", "pm.variables.set('longEndDate', end.toISOString().slice(0, 10));" ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Period longer than one year is rejected', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Claims",
+      "item": [
+        {
+          "name": "Create claim inside cover period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverId\": \"{{coverId}}\",\n  \"created\": \"{{claimDate}}\",\n  \"name\": \"Manual test claim\",\n  \"type\": \"Collision\",\n  \"damageCost\": 2500\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Claims"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is created', () => pm.response.to.have.status(201));", "const claim = pm.response.json();", "pm.collectionVariables.set('claimId', claim.id);", "pm.test('Claim ID is returned', () => pm.expect(claim.id).to.be.a('string').and.not.empty);" ] } }]
+        },
+        {
+          "name": "List claims",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Claims" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claims are listed', () => pm.response.to.have.status(200));", "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));" ] } }]
+        },
+        {
+          "name": "Get created claim",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Claims/{{claimId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is returned', () => pm.response.to.have.status(200));", "pm.test('ID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('claimId')));" ] } }]
+        },
+        {
+          "name": "Reject damage cost over 100000 (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverId\": \"{{coverId}}\",\n  \"created\": \"{{claimDate}}\",\n  \"name\": \"Invalid cost\",\n  \"type\": \"Fire\",\n  \"damageCost\": 100001\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Claims"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Damage cost above the limit is rejected', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }]
+        },
+        {
+          "name": "Reject claim outside cover period (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverId\": \"{{coverId}}\",\n  \"created\": \"{{outsideClaimDate}}\",\n  \"name\": \"Out of period\",\n  \"type\": \"Grounding\",\n  \"damageCost\": 50\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/Claims"
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const end = new Date(pm.collectionVariables.get('coverEndDate') + 'T00:00:00Z');", "end.setUTCDate(end.getUTCDate() + 1);", "pm.variables.set('outsideClaimDate', end.toISOString().slice(0, 10));" ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim outside cover dates is rejected', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }
+          ]
+        },
+        {
+          "name": "Delete created claim",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/Claims/{{claimId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is deleted', () => pm.response.to.have.status(204));" ] } }]
+        },
+        {
+          "name": "Delete created cover",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/Covers/{{coverId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is deleted', () => pm.response.to.have.status(204));" ] } }]
+        }
+      ]
+    }
+  ]
+}

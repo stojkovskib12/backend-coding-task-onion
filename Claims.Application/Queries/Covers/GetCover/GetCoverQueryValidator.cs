@@ -1,0 +1,8 @@
+using FluentValidation;
+
+namespace Claims.Application.Queries.Covers.GetCover;
+
+public sealed class GetCoverQueryValidator : AbstractValidator<GetCoverQuery>
+{
+    public GetCoverQueryValidator() => RuleFor(query => query.Id).NotEmpty();
+}
