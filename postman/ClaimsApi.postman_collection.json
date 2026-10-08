@@ -78,6 +78,11 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is returned', () => pm.response.to.have.status(200));", "pm.test('GUID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('coverId')));" ] } }]
         },
         {
+          "name": "Get missing cover (expect 404)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Covers/2147483647" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Missing cover returns 404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
           "name": "Calculate premium (Yacht, 60 days)",
           "request": {
             "method": "POST",
@@ -158,6 +163,11 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is returned', () => pm.response.to.have.status(200));", "pm.test('ID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('claimId')));" ] } }]
         },
         {
+          "name": "Get missing claim (expect 404)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/Claims/2147483647" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Missing claim returns 404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
           "name": "Reject damage cost over 100000 (expect 400)",
           "request": {
             "method": "POST",
@@ -187,6 +197,11 @@
             { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const end = new Date(pm.collectionVariables.get('coverEndDate') + 'T00:00:00Z');", "end.setUTCDate(end.getUTCDate() + 1);", "pm.variables.set('outsideClaimDate', end.toISOString().slice(0, 10));" ] } },
             { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim outside cover dates is rejected', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }
           ]
+        },
+        {
+          "name": "Reject deleting cover while claim exists (expect 400)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/Covers/{{coverDisplayId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover with claims cannot be deleted', () => pm.response.to.have.status(400));", "pm.test('Validation errors are returned', () => pm.expect(pm.response.json()).to.have.property('errors'));" ] } }]
         },
         {
           "name": "Delete created claim",
