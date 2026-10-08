@@ -12,7 +12,7 @@ public sealed class CreateClaimCommandValidator : AbstractValidator<CreateClaimC
         RuleFor(command => command.CoverId).NotEmpty();
         RuleFor(command => command).CustomAsync(async (command, context, cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(command.CoverId)) return;
+            if (command.CoverId == Guid.Empty) return;
             var cover = await repository.GetCoverAsync(command.CoverId, cancellationToken);
             if (cover is null)
             {

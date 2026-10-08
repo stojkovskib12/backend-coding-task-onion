@@ -2,13 +2,15 @@
   "info": {
     "_postman_id": "81cb6baa-19c5-4a61-9052-2f03df1dc693",
     "name": "Claims API - Local Manual Testing",
-    "description": "Manual CRUD, premium, and validation checks for the local Claims API. Start the API first; its default launch profile uses http://localhost:5180.",
+    "description": "Ready-to-run manual checks for the Claims Handling API. Start it with `dotnet run --project .\\Claims.WebApi\\Claims.WebApi.csproj`; the default URL is http://localhost:5180 and Swagger is at http://localhost:5180/swagger. Set the collection variable `baseUrl` if needed. Run requests in order: create cover, cover reads/premium/validation, create claim, claim reads/validation, verify cover deletion is blocked while the claim exists, delete claim, then delete cover. Dates are generated relative to today and created GUIDs/display IDs are saved automatically.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5180" },
     { "key": "coverId", "value": "" },
+    { "key": "coverDisplayId", "value": "" },
     { "key": "claimId", "value": "" },
+    { "key": "claimDisplayId", "value": "" },
     { "key": "coverStartDate", "value": "" },
     { "key": "coverEndDate", "value": "" },
     { "key": "claimDate", "value": "" }
@@ -57,6 +59,9 @@
                 "pm.test('Cover is created', () => pm.response.to.have.status(201));",
                 "const cover = pm.response.json();",
                 "pm.collectionVariables.set('coverId', cover.id);",
+                "pm.collectionVariables.set('coverDisplayId', cover.displayId);",
+                "pm.test('Cover GUID is returned', () => pm.expect(cover.id).to.be.a('string').and.not.empty);",
+                "pm.test('Cover number is generated', () => pm.expect(cover.displayId).to.be.a('number').and.greaterThan(0));",
                 "pm.test('Premium is returned', () => pm.expect(cover.premium).to.be.above(0));"
               ]
             }
@@ -69,8 +74,8 @@
         },
         {
           "name": "Get created cover",
-          "request": { "method": "GET", "url": "{{baseUrl}}/Covers/{{coverId}}" },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is returned', () => pm.response.to.have.status(200));", "pm.test('ID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('coverId')));" ] } }]
+          "request": { "method": "GET", "url": "{{baseUrl}}/Covers/{{coverDisplayId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is returned', () => pm.response.to.have.status(200));", "pm.test('GUID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('coverId')));" ] } }]
         },
         {
           "name": "Calculate premium (Yacht, 60 days)",
@@ -140,7 +145,7 @@
             },
             "url": "{{baseUrl}}/Claims"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is created', () => pm.response.to.have.status(201));", "const claim = pm.response.json();", "pm.collectionVariables.set('claimId', claim.id);", "pm.test('Claim ID is returned', () => pm.expect(claim.id).to.be.a('string').and.not.empty);" ] } }]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is created', () => pm.response.to.have.status(201));", "const claim = pm.response.json();", "pm.collectionVariables.set('claimId', claim.id);", "pm.collectionVariables.set('claimDisplayId', claim.displayId);", "pm.test('Claim GUID is returned', () => pm.expect(claim.id).to.be.a('string').and.not.empty);", "pm.test('Claim number is generated', () => pm.expect(claim.displayId).to.be.a('number').and.greaterThan(0));" ] } }]
         },
         {
           "name": "List claims",
@@ -149,7 +154,7 @@
         },
         {
           "name": "Get created claim",
-          "request": { "method": "GET", "url": "{{baseUrl}}/Claims/{{claimId}}" },
+          "request": { "method": "GET", "url": "{{baseUrl}}/Claims/{{claimDisplayId}}" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is returned', () => pm.response.to.have.status(200));", "pm.test('ID matches', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('claimId')));" ] } }]
         },
         {
@@ -185,12 +190,12 @@
         },
         {
           "name": "Delete created claim",
-          "request": { "method": "DELETE", "url": "{{baseUrl}}/Claims/{{claimId}}" },
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/Claims/{{claimDisplayId}}" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Claim is deleted', () => pm.response.to.have.status(204));" ] } }]
         },
         {
           "name": "Delete created cover",
-          "request": { "method": "DELETE", "url": "{{baseUrl}}/Covers/{{coverId}}" },
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/Covers/{{coverDisplayId}}" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cover is deleted', () => pm.response.to.have.status(204));" ] } }]
         }
       ]

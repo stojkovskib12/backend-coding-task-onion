@@ -20,17 +20,21 @@ public sealed class ClaimsRepositoryTests : IDisposable
     }
     [Fact] public async Task Claim_and_cover_crud_round_trip()
     {
-        var cover = new Cover("c1", new(2026, 1, 1), new(2026, 12, 31), CoverType.Yacht, 100m);
-        await _repository.AddCoverAsync(cover, default);
-        var claim = new Claim("q1", "c1", new(2026, 5, 5), "Damage", ClaimType.Fire, 42m);
-        await _repository.AddClaimAsync(claim, default);
-        Assert.Equal(claim, await _repository.GetClaimAsync("q1", default));
+        var cover = new Cover(Guid.NewGuid(), 0, new(2026, 1, 1), new(2026, 12, 31), CoverType.Yacht, 100m);
+        cover = await _repository.AddCoverAsync(cover, default);
+        var claim = new Claim(Guid.NewGuid(), 0, cover.Id, new(2026, 5, 5), "Damage", ClaimType.Fire, 42m);
+        claim = await _repository.AddClaimAsync(claim, default);
+        Assert.NotEqual(Guid.Empty, cover.Id);
+        Assert.NotEqual(Guid.Empty, claim.Id);
+        Assert.True(cover.DisplayId > 0);
+        Assert.True(claim.DisplayId > 0);
+        Assert.Equal(claim, await _repository.GetClaimByDisplayIdAsync(claim.DisplayId, default));
         Assert.Single(await _repository.GetClaimsAsync(default));
-        Assert.Equal(cover, await _repository.GetCoverAsync("c1", default));
-        await _repository.DeleteClaimAsync("q1", default);
-        await _repository.DeleteCoverAsync("c1", default);
+        Assert.Equal(cover, await _repository.GetCoverAsync(cover.Id, default));
+        await _repository.DeleteClaimByDisplayIdAsync(claim.DisplayId, default);
+        await _repository.DeleteCoverByDisplayIdAsync(cover.DisplayId, default);
         Assert.Empty(await _repository.GetClaimsAsync(default));
-        Assert.Null(await _repository.GetCoverAsync("c1", default));
+        Assert.Null(await _repository.GetCoverAsync(cover.Id, default));
     }
     public void Dispose() { _db.Dispose(); _connection.Dispose(); }
 }

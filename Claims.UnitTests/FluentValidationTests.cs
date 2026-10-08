@@ -20,10 +20,11 @@ public sealed class FluentValidationTests
     public async Task Claim_damage_cost_is_validated(decimal cost, bool valid)
     {
         var repo = new Mock<IClaimsRepository>();
-        repo.Setup(x => x.GetCoverAsync("c1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Cover("c1", Today, Today.AddYears(1), CoverType.Yacht, 1m));
+        var coverId = Guid.NewGuid();
+        repo.Setup(x => x.GetCoverAsync(coverId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Cover(coverId, 0, Today, Today.AddYears(1), CoverType.Yacht, 1m));
         var validator = new CreateClaimCommandValidator(repo.Object);
-        var result = await validator.ValidateAsync(new CreateClaimCommand("c1", Today, "Test", ClaimType.Fire, cost));
+        var result = await validator.ValidateAsync(new CreateClaimCommand(coverId, Today, "Test", ClaimType.Fire, cost));
         Assert.Equal(valid, result.IsValid);
     }
 
@@ -35,19 +36,21 @@ public sealed class FluentValidationTests
     public async Task Claim_date_must_be_inside_related_cover(int year, int month, int day, bool valid)
     {
         var repo = new Mock<IClaimsRepository>();
-        repo.Setup(x => x.GetCoverAsync("c1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Cover("c1", Today, Today.AddYears(1), CoverType.Yacht, 1m));
+        var coverId = Guid.NewGuid();
+        repo.Setup(x => x.GetCoverAsync(coverId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Cover(coverId, 0, Today, Today.AddYears(1), CoverType.Yacht, 1m));
         var result = await new CreateClaimCommandValidator(repo.Object)
-            .ValidateAsync(new CreateClaimCommand("c1", new DateOnly(year, month, day), "Test", ClaimType.Fire, 1m));
+            .ValidateAsync(new CreateClaimCommand(coverId, new DateOnly(year, month, day), "Test", ClaimType.Fire, 1m));
         Assert.Equal(valid, result.IsValid);
     }
 
     [Fact] public async Task Claim_requires_related_cover()
     {
         var repo = new Mock<IClaimsRepository>();
-        repo.Setup(x => x.GetCoverAsync("missing", It.IsAny<CancellationToken>())).ReturnsAsync((Cover?)null);
+        var missingCoverId = Guid.NewGuid();
+        repo.Setup(x => x.GetCoverAsync(missingCoverId, It.IsAny<CancellationToken>())).ReturnsAsync((Cover?)null);
         var result = await new CreateClaimCommandValidator(repo.Object)
-            .ValidateAsync(new CreateClaimCommand("missing", Today, "Test", ClaimType.Fire, 1m));
+            .ValidateAsync(new CreateClaimCommand(missingCoverId, Today, "Test", ClaimType.Fire, 1m));
         Assert.Contains(result.Errors, error => error.PropertyName == nameof(CreateClaimCommand.CoverId));
     }
 

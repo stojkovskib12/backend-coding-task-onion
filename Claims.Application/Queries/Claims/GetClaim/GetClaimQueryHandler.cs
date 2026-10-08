@@ -6,5 +6,5 @@ namespace Claims.Application.Queries.Claims.GetClaim;
 
 public sealed class GetClaimQueryHandler(IClaimsRepository repository) : IRequestHandler<GetClaimQuery, Claim?>
 {
-    public Task<Claim?> Handle(GetClaimQuery request, CancellationToken cancellationToken) => repository.GetClaimAsync(request.Id, cancellationToken);
+    public Task<Claim?> Handle(GetClaimQuery request, CancellationToken cancellationToken) => repository.GetClaimByDisplayIdAsync(request.DisplayId, cancellationToken);
 }

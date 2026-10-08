@@ -42,7 +42,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         context.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
         problem.Extensions["traceId"] = context.TraceIdentifier;
-        await context.Response.WriteAsJsonAsync(problem, cancellationToken);
+        await context.Response.WriteAsJsonAsync(problem, problem.GetType(), cancellationToken: cancellationToken);
         return true;
     }
 }

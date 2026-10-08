@@ -1,15 +1,16 @@
 using Claims.Application.Abstractions;
+using Claims.Domain;
 using MediatR;
 
 namespace Claims.Application.Commands.Covers.DeleteCover;
 
-public sealed class DeleteCoverCommandHandler(IClaimsRepository repository, IAuditQueue audit) : IRequestHandler<DeleteCoverCommand, bool>
+public sealed class DeleteCoverCommandHandler(IClaimsRepository repository) : IRequestHandler<DeleteCoverCommand, Cover?>
 {
-    public async Task<bool> Handle(DeleteCoverCommand request, CancellationToken cancellationToken)
+    public async Task<Cover?> Handle(DeleteCoverCommand request, CancellationToken cancellationToken)
     {
-        if (await repository.GetCoverAsync(request.Id, cancellationToken) is null) return false;
-        await repository.DeleteCoverAsync(request.Id, cancellationToken);
-        audit.TryEnqueue(new("Cover", request.Id, "DELETE", DateTimeOffset.UtcNow));
-        return true;
+        var cover = await repository.GetCoverByDisplayIdAsync(request.DisplayId, cancellationToken);
+        if (cover is null) return null;
+        await repository.DeleteCoverByDisplayIdAsync(request.DisplayId, cancellationToken);
+        return cover;
     }
 }

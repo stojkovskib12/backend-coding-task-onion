@@ -1,0 +1,1 @@
+{"root":["./src/counter.ts","./src/main.ts","./src/api/claimsapi.ts","./src/api/contracts.ts","./src/app/app.tsx","./src/components/apifeedback.tsx","./src/components/claimspanel.tsx","./src/components/coverspanel.tsx","./src/components/field.tsx","./src/components/premiumpanel.tsx"],"version":"6.0.3"}

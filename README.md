@@ -1,5 +1,7 @@
 # Claims API (onion architecture)
 
+For the microservice architecture, domain rules, configuration, and runtime guidance, see [Service overview](docs/service-overview.md). For request and response examples for every endpoint, see the [HTTP API reference](docs/api-reference.md). Swagger UI is also served at `/swagger` when the API is running.
+
 This is a separate replacement implementation; the original `backend-coding-task` project remains unchanged. The solution uses .NET 9, ASP.NET Core, MediatR, FluentValidation, EF Core with SQL Server, and xUnit.
 
 ## Projects
@@ -19,13 +21,15 @@ Endpoints: `GET/POST /Claims`, `GET/DELETE /Claims/{id}`, `GET/POST /Covers`, `G
 
 Enums are serialized as strings. FluentValidation runs before each MediatR handler through an open pipeline behavior. Validation failures return HTTP 400 ProblemDetails through the global exception handler; missing records return 404. Cover dates are inclusive for claim validation; premium days are the elapsed whole days between start and end dates.
 
+Claims and covers retain GUID `Id` values as stable unique identifiers and have database-generated integer `DisplayId` values for routes and UI tables. A claim references its cover by GUID `CoverId`; a cover with claims cannot be deleted. On startup, the API adds searchable integer display ID columns to an existing local database when they are missing.
+
 ## Premium bands
 
 The first 30 days use the type-adjusted base daily rate. Days 31–180 apply a 5% Yacht discount or 2% discount for other vessels. Days after 180 use a cumulative total discount of 8% for Yacht or 3% for other types. That interprets “additional” as additive percentage points against the base rate.
 
 ## Audit processing
 
-Successful create/delete operations enqueue an audit message to an in-memory `Channel<T>`; a hosted background worker handles it after the HTTP handler has returned. This keeps audit processing off the request path, but the in-memory queue is volatile and each app instance has its own queue. Use a durable broker (for example Azure Service Bus) and an outbox if audit delivery must survive process restarts or scale across instances.
+Every successful MediatR API action queues an audit message through an in-memory bounded `Channel<T>`; a hosted background worker persists it to `ClaimAudits` or `CoverAudits` after the handler returns. Queue admission uses nonblocking `TryWrite`, so the HTTP request never waits for an audit SQL insert. The queue is volatile and drops/logs events if full; use a transactional outbox and durable broker (for example Azure Service Bus) if audit delivery must survive process restarts or scale across instances. EF migrations create the Claims/Covers tables and audit tables on SQL Server startup.
 
 ## Tests
 
@@ -34,3 +38,11 @@ Run `dotnet test Claims.slnx` to execute domain, repository, and API integration
 ## Manual API testing
 
 Import `postman/ClaimsApi.postman_collection.json` into Postman. Start the API with `dotnet run --project Claims.WebApi`; the launch profile opens Swagger and the collection targets `http://localhost:5180` by default. Run the requests in order: the collection creates a cover and claim, saves their IDs, exercises premium and validation behavior, then deletes the test records. Change the collection variable `baseUrl` if the API is listening on a different address.
+# React client
+
+The React and TypeScript API playground lives in `Claims.Client`.
+
+1. In `Claims.Client`, run `yarn install` once, then `yarn start` to launch the React UI by itself.
+2. Open `http://localhost:5173`. Start `Claims.WebApi` separately when you want the endpoint actions to reach the backend. The API base URL is configurable in the top bar; the Swagger link opens the API documentation.
+
+The left panel documents the application layers and business rules. The right panel provides claims and covers list/create/read/delete actions and premium calculation. API validation errors are shown inline. Set `VITE_API_BASE_URL` in a local `.env` file to override the default API URL.

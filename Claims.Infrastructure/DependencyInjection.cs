@@ -1,4 +1,5 @@
 using Claims.Application.Abstractions;
+using Claims.Infrastructure.Auditing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Claims")
             ?? "Server=localhost;Database=Claims;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
         services.AddDbContext<ClaimsDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDbContext<AuditContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IClaimsRepository, ClaimsRepository>();
         services.AddSingleton<AuditQueue>();
         services.AddSingleton<IAuditQueue>(sp => sp.GetRequiredService<AuditQueue>());

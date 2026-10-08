@@ -1,15 +1,16 @@
 using Claims.Application.Abstractions;
+using Claims.Domain;
 using MediatR;
 
 namespace Claims.Application.Commands.Claims.DeleteClaim;
 
-public sealed class DeleteClaimCommandHandler(IClaimsRepository repository, IAuditQueue audit) : IRequestHandler<DeleteClaimCommand, bool>
+public sealed class DeleteClaimCommandHandler(IClaimsRepository repository) : IRequestHandler<DeleteClaimCommand, Claim?>
 {
-    public async Task<bool> Handle(DeleteClaimCommand request, CancellationToken cancellationToken)
+    public async Task<Claim?> Handle(DeleteClaimCommand request, CancellationToken cancellationToken)
     {
-        if (await repository.GetClaimAsync(request.Id, cancellationToken) is null) return false;
-        await repository.DeleteClaimAsync(request.Id, cancellationToken);
-        audit.TryEnqueue(new("Claim", request.Id, "DELETE", DateTimeOffset.UtcNow));
-        return true;
+        var claim = await repository.GetClaimByDisplayIdAsync(request.DisplayId, cancellationToken);
+        if (claim is null) return null;
+        await repository.DeleteClaimByDisplayIdAsync(request.DisplayId, cancellationToken);
+        return claim;
     }
 }
