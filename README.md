@@ -43,6 +43,6 @@ Import `postman/ClaimsApi.postman_collection.json` into Postman. Start the API w
 The React and TypeScript API playground lives in `Claims.Client`.
 
 1. In `Claims.Client`, run `yarn install` once, then `yarn start` to launch the React UI by itself.
-2. Open `http://localhost:5173`. Start `Claims.WebApi` separately when you want the endpoint actions to reach the backend. The API base URL is configurable in the top bar; the Swagger link opens the API documentation.
+2. Open `http://localhost:3000`. Start `Claims.WebApi` separately when you want the endpoint actions to reach the backend. The API base URL is configurable in the top bar; the Swagger link opens the API documentation.
 
 The left panel documents the application layers and business rules. The right panel provides claims and covers list/create/read/delete actions and premium calculation. API validation errors are shown inline. Set `VITE_API_BASE_URL` in a local `.env` file to override the default API URL.
